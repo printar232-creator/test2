@@ -1,44 +1,64 @@
-import datetime  # เพิ่มการดึง datetime เข้ามาเพื่อใช้จัดการวันที่
-import random
+import datetime
+import pandas as pd
 import streamlit as st
 
 # 1. ตั้งค่าหัวข้อเว็บและคำทักทาย
-st.title("แอปพลิเคชันทำนายดวงชะตา 🔮")
+st.title("แอปพลิเคชันทำนายดวงชะตาจากปีเกิด 🔮")
 st.write("สวัสดีครับ! ยินดีต้อนรับสู่โปรแกรมดูดวงประจำปีนี้")
 
-# 2. สร้างช่องกรอกข้อมูล (อายุ วันเดือนปีเกิด)
-st.subheader("กรอกข้อมูลของคุณเพื่อเริ่มทำนาย")
+# ฟังก์ชันสำหรับโหลดข้อมูลจาก Excel พร้อมทำ Caching เพื่อไม่ให้โหลดใหม่ทุกครั้งที่กดปุ่ม
+@st.cache_data
+def load_data():
+    # หากไฟล์ database.xlsx อยู่ใน GitHub โฟลเดอร์เดียวกับโค้ดตอน Deploy สามารถเรียกชื่อไฟล์ตรงๆ ได้เลย
+    file_path = "database.xlsx"
+    
+    # หมายเหตุ: หากต้องการดึงข้าม Repository สามารถเปลี่ยน file_path เป็น URL แบบ Raw ได้ เช่น:
+    # file_path = "https://raw.githubusercontent.com/USERNAME/REPO_NAME/main/database.xlsx"
+    
+    df = pd.read_excel(file_path)
+    return df
 
-age = st.number_input("อายุปัจจุบัน (ปี)", min_value=1, max_value=120, value=25)
+try:
+    df_fortune = load_data()
+    data_loaded = True
+except Exception as e:
+    st.error(f"ไม่สามารถโหลดไฟล์ database.xlsx ได้ กรุณาตรวจสอบการวางไฟล์บน GitHub: {e}")
+    data_loaded = False
 
-# --- ส่วนที่แก้ไข: กำหนดช่วงวันที่ให้เลือกได้เฉพาะปี 1950 ถึง 2017 ---
-min_date = datetime.date(1950, 1, 1)    # วันเริ่มต้นที่ยอมรับ (1 มกราคม 1950)
-max_date = datetime.date(2017, 12, 31)  # วันสุดท้ายที่ยอมรับ (31 ธันวาคม 2017)
-default_date = datetime.date(1995, 1, 1) # ค่าเริ่มต้นที่แสดงตอนเปิดเว็บ (ตั้งไว้กลางๆ ช่วง)
+if data_loaded:
+    # 2. สร้างช่องกรอกข้อมูล (อายุ วันเดือนปีเกิด)
+    st.subheader("กรอกข้อมูลของคุณเพื่อเริ่มทำนาย")
 
-birth_date = st.date_input(
-    "วัน เดือน ปีเกิดของคุณ",
-    value=default_date,
-    min_value=min_date,
-    max_value=max_date
-)
-# -------------------------------------------------------------
+    age = st.number_input("อายุปัจจุบัน (ปี)", min_value=1, max_value=120, value=25)
 
-# รายการคำทำนายดวง
-fortune_list = [
-    "ปีนี้เป็นปีทองของคุณ! หยิบจับอะไรก็เป็นเงินเป็นทอง มีเกณฑ์ได้โชคลาภก้อนโต",
-    "ดวงการงานโดดเด่นมาก มีโอกาสได้เลื่อนขั้นเลื่อนตำแหน่ง หรือได้เริ่มต้นสิ่งใหม่ ๆ ที่ท้าทาย",
-    "ความรักคนโสดจะได้เจอคนถูกใจ ส่วนคนมีคู่ความสัมพันธ์จะราบรื่นและเข้าใจกันมากขึ้น",
-    "ช่วงนี้อาจจะต้องระวังเรื่องสุขภาพและ ความเครียดจากการทำงาน หาเวลาพักผ่อนบ้างนะ",
-    "การเงินหมุนเวียนดี แต่ต้องระวังรายจ่ายที่เกิดจากอารมณ์ชั่ววูบ วางแผนการเงินให้ดีชีวิตจะปังมาก",
-    "จะมีผู้ใหญ่คอยอุปถัมภ์ค้ำชู เดินทางไปไหนมาไหนจะปลอดภัยและได้รับความช่วยเหลือเป็นอย่างดี",
-]
+    # กำหนดช่วงวันที่ให้เลือกเฉพาะปี 1950 ถึง 2017 ตามที่ต้องการ
+    min_date = datetime.date(1950, 1, 1)
+    max_date = datetime.date(2017, 12, 31)
+    default_date = datetime.date(1995, 1, 1)
 
-# 3. สร้างปุ่มกดทำนายดวง
-if st.button("🔮 กดเพื่อทำนายดวงปีนี้"):
-    with st.spinner("กำลังคำนวณดวงชะตาจากวันเกิดของคุณ..."):
-        my_fortune = random.choice(fortune_list)
+    birth_date = st.date_input(
+        "วัน เดือน ปีเกิดของคุณ",
+        value=default_date,
+        min_value=min_date,
+        max_value=max_date
+    )
 
-    st.success("✨ ผลการทำนายดวงของคุณปีนี้ ✨")
-    st.info(f"ผู้ใช้งานอายุ {age} ปี (เกิดวันที่ {birth_date})")
-    st.markdown(f"### > **คำทำนาย:** {my_fortune}")
+    # ดึงค่า "ปี ค.ศ." ออกมาจากวันที่ผู้ใช้เลือก เพื่อนำไปเทียบกับคอลัมน์ years
+    selected_year = birth_date.year
+
+    # 3. สร้างปุ่มกดทำนายดวง
+    if st.button("🔮 กดเพื่อทำนายดวงปีนี้"):
+        with st.spinner("กำลังค้นหาคำทำนายจากปีเกิดของคุณ..."):
+            # ค้นหาแถวใน DataFrame ที่คอลัมน์ 'years' ตรงกับปีที่เลือก
+            matched_row = df_fortune[df_fortune['years'] == selected_year]
+            
+            if not matched_row.empty:
+                # ดึงข้อความคำทำนายจากคอลัมน์ที่ 2 (สมมติว่าชื่อคอลัมน์ 'fortune' หรือดึงจากคอลัมน์ที่ index=1)
+                # .iloc[0, 1] หมายถึง แถวแรกที่เจอ และคอลัมน์ที่ 2
+                my_fortune = matched_row.iloc[0, 1]
+                
+                st.success("✨ ผลการทำนายดวงของคุณปีนี้ ✨")
+                st.info(f"ผู้ใช้งานอายุ {age} ปี (เกิดปี ค.ศ. {selected_year})")
+                st.markdown(f"### > **คำทำนาย:** {my_fortune}")
+            else:
+                st.warning(f"ไม่พบข้อมูลคำทำนายสำหรับปี ค.ศ. {selected_year} ในระบบ")
